@@ -15,7 +15,11 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
 
 from heart_mlops.config import FEATURE_COLUMNS
-from heart_mlops.inference import load_bundle, predict_proba_dict, risk_level_from_probability
+from heart_mlops.inference import (
+    load_bundle,
+    predict_proba_dict,
+    risk_level_from_probability,
+)
 
 logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
 logger = logging.getLogger("heart_api")
@@ -78,7 +82,10 @@ class PredictOut(BaseModel):
     probability_positive: float
     confidence: float
     risk_level: str = Field(
-        description="Plain-language band from probability (no / low / medium / high risk)"
+        description=(
+    "Plain-language band from probability "
+    "(no / low / medium / high risk)"
+)
     )
 
 
