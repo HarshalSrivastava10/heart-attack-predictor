@@ -1,0 +1,6 @@
+{
+  "chosen_model": "logistic",
+  "holdout_roc_auc": 0.9664502164502166,
+  "artifact": "models/heart_classifier.joblib",
+  "mlflow_tracking_uri": "/Users/harssriv/Desktop/heart+disease/heart-disease-mlops/mlruns"
+}

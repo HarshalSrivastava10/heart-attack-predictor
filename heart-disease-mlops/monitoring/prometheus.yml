@@ -1,0 +1,10 @@
+# Minimal scrape config for local Prometheus (Task 8 — wire to Grafana dashboards).
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: heart_api
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - host.docker.internal:8080

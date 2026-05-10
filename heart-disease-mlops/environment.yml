@@ -1,0 +1,7 @@
+# Minimal Conda env; then: pip install -r requirements-dev.txt && pip install -e .
+name: heart-mlops
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
