@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint-test-train:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -e .
+
+      - name: Ruff lint
+        run: ruff check src tests
+
+      - name: Unit tests
+        run: pytest tests/ -v --tb=short
+
+      - name: Train (fast, MLflow + artifacts)
+        env:
+          MLFLOW_TRACKING_URI: ${{ github.workspace }}/mlruns_ci
+        run: python -m heart_mlops.train --fast
+
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: heart_classifier_bundle
+          path: models/heart_classifier.joblib
+
+  docker-build-test:
+    runs-on: ubuntu-latest
+    needs: lint-test-train
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -f docker/Dockerfile -t heart-disease-api:ci .
+
+      - name: Run container and verify /health
+        run: |
+          set -euo pipefail
+
+          docker run -d --name heart_ci -p 18080:8080 heart-disease-api:ci
+
+          cleanup() {
+            docker rm -f heart_ci >/dev/null 2>&1 || true
+          }
+
+          trap cleanup EXIT
+
+          for _ in $(seq 1 90); do
+            if curl -sf http://127.0.0.1:18080/health | grep -q '"status"'; then
+              echo "✓ GET /health succeeded"
+              curl -sS http://127.0.0.1:18080/health
+              docker logs heart_ci 2>&1 | tail -30
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "--- container logs ---"
+          docker logs heart_ci 2>&1 || true
+          exit 1
